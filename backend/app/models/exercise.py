@@ -1,3 +1,4 @@
+from __future__ import annotations
 import enum
 from typing import Optional, List
 from sqlalchemy import Integer, String, Text, Enum

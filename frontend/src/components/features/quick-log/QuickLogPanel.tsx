@@ -8,7 +8,6 @@ import type { Exercise } from '@/types/exercise';
 import type { LogRow } from '@/types/sessionLog';
 import Spinner from '@/components/ui/Spinner';
 
-const CATEGORIES = ['Push', 'Pull', 'Legs', 'Core', 'Cardio', 'Other'];
 
 export default function QuickLogPanel() {
   const {
@@ -29,7 +28,6 @@ export default function QuickLogPanel() {
   const [showMemberDropdown, setShowMemberDropdown] = useState(false);
   const [showAddExercise, setShowAddExercise] = useState(false);
   const [newExName, setNewExName] = useState('');
-  const [newExCategory, setNewExCategory] = useState('Other');
   const [exSearch, setExSearch] = useState('');
   const [showExDropdown, setShowExDropdown] = useState(false);
 
@@ -43,9 +41,13 @@ export default function QuickLogPanel() {
 
   const selectedMember = members.find((m) => m.id === selectedMemberId);
 
-  const filteredMembers = members.filter((m) =>
-    m.name.toLowerCase().includes(memberSearch.toLowerCase())
-  );
+  const filteredMembers = members
+    .filter((m) => m.name.toLowerCase().includes(memberSearch.toLowerCase()))
+    .sort((a, b) => {
+      const lastA = a.name.split(' ').pop()!.toLowerCase();
+      const lastB = b.name.split(' ').pop()!.toLowerCase();
+      return lastA.localeCompare(lastB);
+    });
 
   const filteredExercises = allExercises.filter((e) =>
     e.name.toLowerCase().includes(exSearch.toLowerCase()) &&
@@ -66,9 +68,8 @@ export default function QuickLogPanel() {
 
   const handleCreateAndAddExercise = async () => {
     if (!newExName.trim()) return;
-    await addExercise(newExName.trim(), newExCategory);
+    await addExercise(newExName.trim(), 'Other');
     setNewExName('');
-    setNewExCategory('Other');
     setShowAddExercise(false);
   };
 
@@ -194,10 +195,9 @@ export default function QuickLogPanel() {
                             <li
                               key={ex.id}
                               onMouseDown={() => handleAddExistingExercise(ex)}
-                              className="px-3 py-2 cursor-pointer text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between"
+                              className="px-3 py-2 cursor-pointer text-sm text-gray-700 hover:bg-gray-50"
                             >
-                              <span>{ex.name}</span>
-                              <span className="text-xs text-gray-400">{ex.category}</span>
+                              {ex.name}
                             </li>
                           ))}
                           {exSearch && !allExercises.some((e) => e.name.toLowerCase() === exSearch.toLowerCase()) && (
@@ -230,14 +230,7 @@ export default function QuickLogPanel() {
                       onChange={(e) => setNewExName(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter') handleCreateAndAddExercise(); }}
                     />
-                    <div className="flex gap-2">
-                      <select
-                        className="input input-sm flex-1"
-                        value={newExCategory}
-                        onChange={(e) => setNewExCategory(e.target.value)}
-                      >
-                        {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-                      </select>
+                    <div className="flex gap-2 justify-end">
                       <button className="btn-primary btn-sm" onClick={handleCreateAndAddExercise}>Add</button>
                       <button className="btn-secondary btn-sm" onClick={() => { setShowAddExercise(false); setNewExName(''); }}>Cancel</button>
                     </div>

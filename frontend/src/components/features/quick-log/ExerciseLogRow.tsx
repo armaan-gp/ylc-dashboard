@@ -9,15 +9,6 @@ interface Props {
   onTabLast?: () => void; // called when Tab pressed on last field of last row
 }
 
-const categoryColors: Record<string, string> = {
-  Push: 'bg-blue-100 text-blue-700',
-  Pull: 'bg-purple-100 text-purple-700',
-  Legs: 'bg-green-100 text-green-700',
-  Core: 'bg-orange-100 text-orange-700',
-  Cardio: 'bg-red-100 text-red-700',
-  Other: 'bg-gray-100 text-gray-600',
-};
-
 export default function ExerciseLogRow({ row, isLast, onUpdate, onRemove, onTabLast }: Props) {
   const weightRef = useRef<HTMLInputElement>(null);
 
@@ -35,12 +26,7 @@ export default function ExerciseLogRow({ row, isLast, onUpdate, onRemove, onTabL
     <div className="flex items-center gap-2 py-2 border-b border-gray-50 last:border-0 group">
       {/* Exercise name + category */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
-          <span className="text-sm font-medium text-gray-800 truncate">{row.exercise_name}</span>
-          <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${categoryColors[row.category] || categoryColors.Other}`}>
-            {row.category}
-          </span>
-        </div>
+        <span className="text-sm font-medium text-gray-800 truncate">{row.exercise_name}</span>
       </div>
 
       {/* Sets */}

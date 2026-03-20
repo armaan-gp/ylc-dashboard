@@ -51,11 +51,17 @@ export default function MembersPage() {
     setMembers((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
   };
 
-  const filtered = members.filter((m) => {
-    const matchesSearch = m.name.toLowerCase().includes(search.toLowerCase());
-    const matchesActive = showInactive ? true : m.active;
-    return matchesSearch && matchesActive;
-  });
+  const filtered = members
+    .filter((m) => {
+      const matchesSearch = m.name.toLowerCase().includes(search.toLowerCase());
+      const matchesActive = showInactive ? true : m.active;
+      return matchesSearch && matchesActive;
+    })
+    .sort((a, b) => {
+      const lastA = a.name.split(' ').pop()!.toLowerCase();
+      const lastB = b.name.split(' ').pop()!.toLowerCase();
+      return lastA.localeCompare(lastB);
+    });
 
   const activeCount = members.filter((m) => m.active).length;
 
