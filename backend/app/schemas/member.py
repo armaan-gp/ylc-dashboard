@@ -44,8 +44,10 @@ class MemberExerciseLastLog(BaseModel):
     exercise_id: int
     exercise_name: str
     category: str
+    tracking_type: str = "weight_reps"
     last_sets: Optional[int] = None
     last_reps: Optional[int] = None
     last_weight_lbs: Optional[float] = None
+    last_duration_seconds: Optional[float] = None
     last_date: Optional[date] = None
     last_e1rm: Optional[float] = None

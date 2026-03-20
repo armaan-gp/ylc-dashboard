@@ -8,13 +8,11 @@ import type { Member, MemberExerciseLastLog } from '@/types/member';
 import type { SessionLog, SessionLogUpdate } from '@/types/sessionLog';
 import type {
   E1RMDataPoint,
-  VolumeDataPoint,
   ProjectionResult,
   PlateauResult,
   Recommendation,
 } from '@/types/analytics';
 import E1RMChart from '@/components/charts/E1RMChart';
-import VolumeChart from '@/components/charts/VolumeChart';
 import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import Spinner from '@/components/ui/Spinner';
@@ -42,7 +40,6 @@ export default function MemberDetailPage() {
   const [selectedExId, setSelectedExId] = useState<number | null>(null);
   const [logs, setLogs] = useState<SessionLog[]>([]);
   const [e1rmData, setE1rmData] = useState<E1RMDataPoint[]>([]);
-  const [volumeData, setVolumeData] = useState<VolumeDataPoint[]>([]);
   const [projections, setProjections] = useState<ProjectionResult[]>([]);
   const [plateaus, setPlateaus] = useState<PlateauResult[]>([]);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
@@ -60,12 +57,11 @@ export default function MemberDetailPage() {
       membersApi.getExercises(memberId),
       logsApi.list({ member_id: memberId }),
       analyticsApi.memberE1RM(memberId),
-      analyticsApi.memberVolume(memberId),
       analyticsApi.memberProjection(memberId),
       analyticsApi.memberPlateau(memberId),
       analyticsApi.memberRecommendations(memberId),
     ])
-      .then(([m, exs, ls, e1rm, vol, proj, plat, recs]) => {
+      .then(([m, exs, ls, e1rm, proj, plat, recs]) => {
         setMember(m as Member);
         const exsList = exs as MemberExerciseLastLog[];
         setExercises(exsList);
@@ -74,7 +70,6 @@ export default function MemberDetailPage() {
         }
         setLogs(ls as SessionLog[]);
         setE1rmData(e1rm as E1RMDataPoint[]);
-        setVolumeData(vol as VolumeDataPoint[]);
         setProjections(proj as ProjectionResult[]);
         setPlateaus(plat as PlateauResult[]);
         setRecommendations(recs as Recommendation[]);
@@ -87,9 +82,6 @@ export default function MemberDetailPage() {
   const filteredE1rm = selectedExId
     ? e1rmData.filter((d) => d.exercise_name === selectedExercise?.exercise_name)
     : e1rmData;
-  const filteredVolume = selectedExId
-    ? volumeData.filter((d) => d.exercise_name === selectedExercise?.exercise_name)
-    : volumeData;
   const selectedProjection = projections.find((p) => p.exercise_id === selectedExId);
   const selectedPlateau = plateaus.find((p) => p.exercise_id === selectedExId);
 
@@ -223,17 +215,6 @@ export default function MemberDetailPage() {
             />
           </div>
 
-          {/* Volume Chart */}
-          <div className="card p-5">
-            <h3 className="text-sm font-semibold text-gray-800 mb-3">
-              Volume
-              {selectedExercise && (
-                <span className="text-gray-400 font-normal ml-1">— {selectedExercise.exercise_name}</span>
-              )}
-            </h3>
-            <VolumeChart data={filteredVolume} />
-          </div>
-
           {/* Session History */}
           <div className="card overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
@@ -249,7 +230,6 @@ export default function MemberDetailPage() {
                     <tr>
                       <th className="table-header">Date</th>
                       <th className="table-header">Exercise</th>
-                      <th className="table-header">Sets</th>
                       <th className="table-header">Reps</th>
                       <th className="table-header">Weight</th>
                       <th className="table-header">e1RM</th>
@@ -263,7 +243,6 @@ export default function MemberDetailPage() {
                           {new Date(log.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </td>
                         <td className="table-cell font-medium">{log.exercise_name}</td>
-                        <td className="table-cell">{log.sets}</td>
                         <td className="table-cell">{log.reps}</td>
                         <td className="table-cell">{log.weight_lbs} lbs</td>
                         <td className="table-cell text-primary-600 font-medium">{log.e1rm}</td>
@@ -271,7 +250,7 @@ export default function MemberDetailPage() {
                           <div className="flex gap-1">
                             <button
                               className="btn-ghost btn-sm p-1"
-                              onClick={() => { setEditLog(log); setEditForm({ sets: log.sets, reps: log.reps, weight_lbs: log.weight_lbs, notes: log.notes || '' }); }}
+                              onClick={() => { setEditLog(log); setEditForm({ reps: log.reps, weight_lbs: log.weight_lbs, notes: log.notes || '' }); }}
                             >
                               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -353,11 +332,7 @@ export default function MemberDetailPage() {
       {/* Edit log modal */}
       <Modal isOpen={!!editLog} onClose={() => setEditLog(null)} title="Edit Entry">
         <div className="space-y-3">
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="label">Sets</label>
-              <input type="number" className="input" value={editForm.sets ?? ''} onChange={(e) => setEditForm((f: SessionLogUpdate) => ({ ...f, sets: parseInt(e.target.value) }))} />
-            </div>
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">Reps</label>
               <input type="number" className="input" value={editForm.reps ?? ''} onChange={(e) => setEditForm((f: SessionLogUpdate) => ({ ...f, reps: parseInt(e.target.value) }))} />

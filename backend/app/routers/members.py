@@ -148,9 +148,11 @@ def get_member_exercises(
                 exercise_id=ex_id,
                 exercise_name=exercise.name,
                 category=exercise.category.value,
+                tracking_type=exercise.tracking_type.value,
                 last_sets=last_log.sets if last_log else None,
                 last_reps=last_log.reps if last_log else None,
                 last_weight_lbs=last_log.weight_lbs if last_log else None,
+                last_duration_seconds=last_log.duration_seconds if last_log else None,
                 last_date=last_log.date if last_log else None,
                 last_e1rm=last_log.e1rm if last_log else None,
             )

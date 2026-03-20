@@ -25,6 +25,7 @@ def to_read(log: SessionLog) -> SessionLogRead:
         sets=log.sets,
         reps=log.reps,
         weight_lbs=log.weight_lbs,
+        duration_seconds=log.duration_seconds,
         notes=log.notes,
         e1rm=log.e1rm,
         volume=log.volume,
@@ -106,6 +107,7 @@ def bulk_upsert_logs(
             existing.sets = item.sets
             existing.reps = item.reps
             existing.weight_lbs = item.weight_lbs
+            existing.duration_seconds = item.duration_seconds
             if item.notes is not None:
                 existing.notes = item.notes
             result.append(existing)
@@ -117,6 +119,7 @@ def bulk_upsert_logs(
                 sets=item.sets,
                 reps=item.reps,
                 weight_lbs=item.weight_lbs,
+                duration_seconds=item.duration_seconds,
                 notes=item.notes,
             )
             db.add(log)

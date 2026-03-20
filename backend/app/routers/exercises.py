@@ -22,6 +22,7 @@ def enrich_exercise(exercise: Exercise, db: Session) -> ExerciseRead:
         id=exercise.id,
         name=exercise.name,
         category=exercise.category,
+        tracking_type=exercise.tracking_type,
         description=exercise.description,
         active=bool(exercise.active),
         usage_count=count or 0,
@@ -60,6 +61,7 @@ def create_exercise(
     exercise = Exercise(
         name=body.name,
         category=body.category,
+        tracking_type=body.tracking_type,
         description=body.description,
         active=True,
     )

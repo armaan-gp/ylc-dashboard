@@ -5,7 +5,7 @@ import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import EmptyState from '@/components/ui/EmptyState';
 import Spinner from '@/components/ui/Spinner';
-import type { Exercise } from '@/types/exercise';
+import type { Exercise, TrackingType } from '@/types/exercise';
 
 
 export default function ExercisesPage() {
@@ -19,10 +19,12 @@ export default function ExercisesPage() {
 
   // Add form state
   const [newName, setNewName] = useState('');
+  const [newTrackingType, setNewTrackingType] = useState<TrackingType>('weight_reps');
   const [newDesc, setNewDesc] = useState('');
 
   // Edit form state
   const [editName, setEditName] = useState('');
+  const [editTrackingType, setEditTrackingType] = useState<TrackingType>('weight_reps');
   const [editDesc, setEditDesc] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -36,6 +38,7 @@ export default function ExercisesPage() {
   useEffect(() => {
     if (editExercise) {
       setEditName(editExercise.name);
+      setEditTrackingType(editExercise.tracking_type);
       setEditDesc(editExercise.description || '');
     }
   }, [editExercise]);
@@ -44,9 +47,9 @@ export default function ExercisesPage() {
     if (!newName.trim()) return;
     setSaving(true);
     try {
-      const created = await exercisesApi.create({ name: newName.trim(), category: 'Other', description: newDesc || undefined });
+      const created = await exercisesApi.create({ name: newName.trim(), category: 'Other', tracking_type: newTrackingType, description: newDesc || undefined });
       setExercises((prev) => [created, ...prev]);
-      setNewName(''); setNewDesc('');
+      setNewName(''); setNewTrackingType('weight_reps'); setNewDesc('');
       setShowAdd(false);
       toast.success('Exercise created');
     } catch {
@@ -60,7 +63,7 @@ export default function ExercisesPage() {
     if (!editExercise || !editName.trim()) return;
     setSaving(true);
     try {
-      const updated = await exercisesApi.update(editExercise.id, { name: editName.trim(), description: editDesc || undefined });
+      const updated = await exercisesApi.update(editExercise.id, { name: editName.trim(), tracking_type: editTrackingType, description: editDesc || undefined });
       setExercises((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
       setEditExercise(null);
       toast.success('Exercise updated');
@@ -135,6 +138,7 @@ export default function ExercisesPage() {
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
                 <th className="table-header">Name</th>
+                <th className="table-header">Tracked By</th>
                 <th className="table-header">Usage</th>
                 <th className="table-header">Status</th>
                 <th className="table-header w-24"></th>
@@ -148,6 +152,11 @@ export default function ExercisesPage() {
                       <p className="font-medium text-gray-900">{ex.name}</p>
                       {ex.description && <p className="text-xs text-gray-400 mt-0.5">{ex.description}</p>}
                     </div>
+                  </td>
+                  <td className="table-cell">
+                    <span className={ex.tracking_type === 'weight_duration' ? 'badge-blue' : 'badge-gray'}>
+                      {ex.tracking_type === 'weight_duration' ? 'Duration' : 'Reps'}
+                    </span>
                   </td>
                   <td className="table-cell text-gray-500">{ex.usage_count} logs</td>
                   <td className="table-cell"><span className={ex.active ? 'badge-green' : 'badge-gray'}>{ex.active ? 'Active' : 'Inactive'}</span></td>
@@ -181,6 +190,19 @@ export default function ExercisesPage() {
             <input type="text" className="input" placeholder="e.g. Bench Press" value={newName} onChange={(e) => setNewName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleCreate(); }} autoFocus />
           </div>
           <div>
+            <label className="label">Tracked By</label>
+            <div className="flex gap-5 mt-1">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="new-tracking" value="weight_reps" checked={newTrackingType === 'weight_reps'} onChange={() => setNewTrackingType('weight_reps')} className="text-primary-600" />
+                <span className="text-sm text-gray-700">Weight &amp; Reps</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="new-tracking" value="weight_duration" checked={newTrackingType === 'weight_duration'} onChange={() => setNewTrackingType('weight_duration')} className="text-primary-600" />
+                <span className="text-sm text-gray-700">Weight &amp; Duration</span>
+              </label>
+            </div>
+          </div>
+          <div>
             <label className="label">Description (optional)</label>
             <input type="text" className="input" placeholder="Short description..." value={newDesc} onChange={(e) => setNewDesc(e.target.value)} />
           </div>
@@ -199,6 +221,19 @@ export default function ExercisesPage() {
           <div>
             <label className="label">Name</label>
             <input type="text" className="input" value={editName} onChange={(e) => setEditName(e.target.value)} autoFocus />
+          </div>
+          <div>
+            <label className="label">Tracked By</label>
+            <div className="flex gap-5 mt-1">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="edit-tracking" value="weight_reps" checked={editTrackingType === 'weight_reps'} onChange={() => setEditTrackingType('weight_reps')} className="text-primary-600" />
+                <span className="text-sm text-gray-700">Weight &amp; Reps</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="edit-tracking" value="weight_duration" checked={editTrackingType === 'weight_duration'} onChange={() => setEditTrackingType('weight_duration')} className="text-primary-600" />
+                <span className="text-sm text-gray-700">Weight &amp; Duration</span>
+              </label>
+            </div>
           </div>
           <div>
             <label className="label">Description (optional)</label>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { analyticsApi } from '@/api/analytics';
 import ClubVolumeChart from '@/components/charts/ClubVolumeChart';
 import type { WeeklyVolume, TopPerformer } from '@/types/analytics';
+
 import Spinner from '@/components/ui/Spinner';
 
 export default function AnalyticsPage() {
@@ -36,9 +37,9 @@ export default function AnalyticsPage() {
       <h1 className="text-xl font-bold text-gray-900 mb-5">Club Analytics</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Club Volume Chart */}
+        {/* Weekly Sessions Chart */}
         <div className="card p-5 lg:col-span-2">
-          <h2 className="text-sm font-semibold text-gray-800 mb-4">Weekly Club Volume & Sessions</h2>
+          <h2 className="text-sm font-semibold text-gray-800 mb-4">Weekly Sessions</h2>
           <ClubVolumeChart data={weeklyVolume} />
         </div>
 

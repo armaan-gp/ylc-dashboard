@@ -50,7 +50,7 @@ export default function RecentActivity({ logs, loading }: Props) {
                 </span>
               </div>
               <p className="text-xs text-gray-400 mt-0.5">
-                {log.sets}×{log.reps} @ {log.weight_lbs} lbs
+                {log.reps} reps @ {log.weight_lbs} lbs
                 <span className="ml-1.5 text-primary-500">e1RM {log.e1rm} lbs</span>
               </p>
             </li>

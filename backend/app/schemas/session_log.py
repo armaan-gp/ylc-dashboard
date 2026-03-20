@@ -10,6 +10,7 @@ class SessionLogBase(BaseModel):
     sets: int
     reps: int
     weight_lbs: float
+    duration_seconds: Optional[float] = None
     notes: Optional[str] = None
 
     @field_validator("sets", "reps")
@@ -21,9 +22,9 @@ class SessionLogBase(BaseModel):
 
     @field_validator("weight_lbs")
     @classmethod
-    def positive_float(cls, v: float) -> float:
-        if v <= 0:
-            raise ValueError("Weight must be positive")
+    def non_negative_float(cls, v: float) -> float:
+        if v < 0:
+            raise ValueError("Weight must be non-negative")
         return v
 
 
@@ -36,6 +37,7 @@ class SessionLogUpdate(BaseModel):
     sets: Optional[int] = None
     reps: Optional[int] = None
     weight_lbs: Optional[float] = None
+    duration_seconds: Optional[float] = None
     notes: Optional[str] = None
 
 
@@ -47,6 +49,7 @@ class SessionLogRead(BaseModel):
     sets: int
     reps: int
     weight_lbs: float
+    duration_seconds: Optional[float]
     notes: Optional[str]
     e1rm: float
     volume: float

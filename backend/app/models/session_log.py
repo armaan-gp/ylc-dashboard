@@ -1,7 +1,7 @@
 from __future__ import annotations
 from datetime import date
 from typing import Optional
-from sqlalchemy import Integer, String, Float, Date, Text, ForeignKey
+from sqlalchemy import Integer, Float, Date, Text, ForeignKey  # noqa
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
@@ -16,11 +16,14 @@ class SessionLog(Base):
     sets: Mapped[int] = mapped_column(Integer, nullable=False)
     reps: Mapped[int] = mapped_column(Integer, nullable=False)
     weight_lbs: Mapped[float] = mapped_column(Float, nullable=False)
+    duration_seconds: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     @property
     def e1rm(self) -> float:
-        return round(self.weight_lbs * (1 + self.reps / 30), 1)
+        if self.reps and self.reps > 0:
+            return round(self.weight_lbs * (1 + self.reps / 30), 1)
+        return round(self.weight_lbs, 1)
 
     @property
     def volume(self) -> float:

@@ -33,18 +33,15 @@ export default function DashboardPage() {
         <ClubStatsCard stats={stats} loading={statsLoading} />
       </div>
 
-      {/* Main grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Quick Log – takes up more space */}
-        <div className="lg:col-span-1">
-          <QuickLogPanel />
-        </div>
+      {/* Quick Log – full width, primary feature */}
+      <div className="mb-5">
+        <QuickLogPanel />
+      </div>
 
-        {/* Needs Attention + Recent Activity */}
-        <div className="lg:col-span-2 space-y-5">
-          <NeedsAttentionList members={attention} loading={attentionLoading} />
-          <RecentActivity logs={recent} loading={recentLoading} />
-        </div>
+      {/* Secondary widgets */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <NeedsAttentionList members={attention} loading={attentionLoading} />
+        <RecentActivity logs={recent} loading={recentLoading} />
       </div>
     </div>
   );

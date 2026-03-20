@@ -6,6 +6,7 @@ export interface SessionLog {
   sets: number;
   reps: number;
   weight_lbs: number;
+  duration_seconds: number | null;
   notes: string | null;
   e1rm: number;
   volume: number;
@@ -20,6 +21,7 @@ export interface SessionLogCreate {
   sets: number;
   reps: number;
   weight_lbs: number;
+  duration_seconds?: number;
   notes?: string;
 }
 
@@ -28,6 +30,7 @@ export interface SessionLogUpdate {
   sets?: number;
   reps?: number;
   weight_lbs?: number;
+  duration_seconds?: number;
   notes?: string;
 }
 
@@ -35,12 +38,13 @@ export interface LogRow {
   exercise_id: number;
   exercise_name: string;
   category: string;
-  sets: string;
+  tracking_type: 'weight_reps' | 'weight_duration';
   reps: string;
+  duration: string;
   weight_lbs: string;
   notes: string;
   isDirty: boolean;
-  placeholder_sets: string;
   placeholder_reps: string;
+  placeholder_duration: string;
   placeholder_weight: string;
 }
