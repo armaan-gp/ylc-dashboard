@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/store/authStore';
+import { applyPalette, useThemeStore } from '@/store/themeStore';
 import Layout from '@/components/layout/Layout';
 import LoginPage from '@/pages/LoginPage';
 import DashboardPage from '@/pages/DashboardPage';
@@ -70,9 +71,18 @@ function AppRoutes() {
   );
 }
 
+function ThemeBootstrap() {
+  const { palette } = useThemeStore();
+  useEffect(() => {
+    applyPalette(palette);
+  }, []);
+  return null;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
+      <ThemeBootstrap />
       <AppRoutes />
       <Toaster
         position="top-right"

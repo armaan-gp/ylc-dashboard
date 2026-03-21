@@ -49,23 +49,40 @@ export function useQuickLog() {
     sessions: MemberSessionPayload[],
     date?: string,
   ): Promise<boolean> => {
+    // Check for partial rows: one field filled but not the other
+    for (const { logRows } of sessions) {
+      for (const row of logRows) {
+        const hasWeight = row.weight_lbs !== '';
+        const hasOther = row.tracking_type === 'weight_duration'
+          ? row.duration !== ''
+          : row.reps !== '';
+        if (hasWeight && !hasOther) {
+          const label = row.tracking_type === 'weight_duration' ? 'duration' : 'reps';
+          toast.error(`${row.exercise_name}: fill in both weight and ${label}, or leave both blank.`);
+          return false;
+        }
+        if (!hasWeight && hasOther) {
+          const label = row.tracking_type === 'weight_duration' ? 'duration' : 'reps';
+          toast.error(`${row.exercise_name}: fill in both weight and ${label}, or leave both blank.`);
+          return false;
+        }
+      }
+    }
+
+    // Only include rows where the user explicitly typed both values
     const payload = sessions.flatMap(({ memberId, logRows }) =>
       logRows
-        .filter((row) => {
-          const hasWeight = row.weight_lbs !== '' || row.placeholder_weight !== '';
-          if (row.tracking_type === 'weight_duration') {
-            return hasWeight && (row.duration !== '' || row.placeholder_duration !== '');
-          }
-          return hasWeight && (row.reps !== '' || row.placeholder_reps !== '');
-        })
+        .filter((row) => row.weight_lbs !== '' && (
+          row.tracking_type === 'weight_duration' ? row.duration !== '' : row.reps !== ''
+        ))
         .map((row) => ({
           member_id: memberId,
           exercise_id: row.exercise_id,
           sets: 1,
-          reps: row.tracking_type === 'weight_duration' ? 1 : parseInt(row.reps || row.placeholder_reps),
-          weight_lbs: parseFloat(row.weight_lbs || row.placeholder_weight),
+          reps: row.tracking_type === 'weight_duration' ? 1 : parseInt(row.reps),
+          weight_lbs: parseFloat(row.weight_lbs),
           duration_seconds: row.tracking_type === 'weight_duration'
-            ? parseFloat(row.duration || row.placeholder_duration)
+            ? parseFloat(row.duration)
             : undefined,
           notes: row.notes || undefined,
           ...(date ? { date } : {}),
@@ -73,15 +90,8 @@ export function useQuickLog() {
     );
 
     if (payload.length === 0) {
-      toast.error('No entries to save. Fill in at least one exercise.');
+      toast.error('No entries to save. Fill in weight and reps for at least one exercise.');
       return false;
-    }
-
-    for (const item of payload) {
-      if (isNaN(item.weight_lbs) || item.weight_lbs < 0) {
-        toast.error('Some weight values are invalid.');
-        return false;
-      }
     }
 
     setSaving(true);

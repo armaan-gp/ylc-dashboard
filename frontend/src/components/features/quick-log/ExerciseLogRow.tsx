@@ -19,6 +19,21 @@ export default function ExerciseLogRow({ row, onUpdate, onRemove }: Props) {
         <span className="text-sm font-medium text-gray-800 truncate block">{row.exercise_name}</span>
       </div>
 
+      {/* Weight */}
+      <div className="w-28">
+        <label className="sr-only">Weight (lbs)</label>
+        <input
+          ref={weightRef}
+          type="number"
+          min="0"
+          step="2.5"
+          className="input text-center"
+          placeholder={row.placeholder_weight || 'lbs'}
+          value={row.weight_lbs}
+          onChange={(e) => onUpdate('weight_lbs', e.target.value)}
+        />
+      </div>
+
       {/* Reps or Duration */}
       <div className="w-24">
         {row.tracking_type === 'weight_duration' ? (
@@ -46,21 +61,6 @@ export default function ExerciseLogRow({ row, onUpdate, onRemove }: Props) {
             />
           </>
         )}
-      </div>
-
-      {/* Weight */}
-      <div className="w-28">
-        <label className="sr-only">Weight (lbs)</label>
-        <input
-          ref={weightRef}
-          type="number"
-          min="0"
-          step="2.5"
-          className="input text-center"
-          placeholder={row.placeholder_weight || 'lbs'}
-          value={row.weight_lbs}
-          onChange={(e) => onUpdate('weight_lbs', e.target.value)}
-        />
       </div>
 
       {/* Remove */}

@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --p-50:  #eff6ff;
+  --p-100: #dbeafe;
+  --p-200: #bfdbfe;
+  --p-500: #3b82f6;
+  --p-600: #2563eb;
+  --p-700: #1d4ed8;
+  --p-800: #1e40af;
+}
+
 @layer base {
   html {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;

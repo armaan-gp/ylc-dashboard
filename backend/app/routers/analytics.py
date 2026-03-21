@@ -19,6 +19,9 @@ from app.schemas.analytics import (
     NeedsAttentionMember,
     WeeklyVolume,
     TopPerformer,
+    TopRepGainer,
+    RepsDataPoint,
+    RepsProjectionResult,
 )
 from app.services.analytics import (
     get_member_e1rm_series,
@@ -27,6 +30,9 @@ from app.services.analytics import (
     get_plateaus_for_member,
     get_needs_attention,
     get_club_weekly_volume,
+    get_member_reps_series,
+    get_reps_projections_for_member,
+    get_reps_plateaus_for_member,
 )
 from app.services.recommendations import get_recommendations_for_member
 
@@ -152,6 +158,52 @@ def member_plateau(
     return get_plateaus_for_member(member_id, db)
 
 
+@router.get("/member/{member_id}/reps", response_model=List[RepsDataPoint])
+def member_reps(
+    member_id: int,
+    exercise_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    _: bool = Depends(get_current_user),
+):
+    """Max reps per day for bodyweight (weight=0) exercises."""
+    member = db.query(Member).filter(Member.id == member_id).first()
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+
+    series = get_member_reps_series(member_id, db)
+    if exercise_id is not None:
+        return series.get(exercise_id, [])
+
+    result = []
+    for points in series.values():
+        result.extend(points)
+    return sorted(result, key=lambda x: x.date)
+
+
+@router.get("/member/{member_id}/reps-projection", response_model=List[RepsProjectionResult])
+def member_reps_projection(
+    member_id: int,
+    db: Session = Depends(get_db),
+    _: bool = Depends(get_current_user),
+):
+    member = db.query(Member).filter(Member.id == member_id).first()
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    return get_reps_projections_for_member(member_id, db)
+
+
+@router.get("/member/{member_id}/reps-plateau", response_model=List[PlateauResult])
+def member_reps_plateau(
+    member_id: int,
+    db: Session = Depends(get_db),
+    _: bool = Depends(get_current_user),
+):
+    member = db.query(Member).filter(Member.id == member_id).first()
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    return get_reps_plateaus_for_member(member_id, db)
+
+
 @router.get("/member/{member_id}/recommendations", response_model=List[Recommendation])
 def member_recommendations(
     member_id: int,
@@ -182,37 +234,48 @@ def club_volume(
 
 @router.get("/top-performers", response_model=List[TopPerformer])
 def top_performers(
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
     db: Session = Depends(get_db),
     _: bool = Depends(get_current_user),
 ):
-    """Members with highest % e1RM gain this month."""
-    today = date.today()
-    month_start = today.replace(day=1)
-
+    """Members with highest % e1RM gain over the given period."""
+    from app.services.analytics import get_member_e1rm_series
+    end = date_to or date.today()
     members = db.query(Member).filter(Member.active == True).all()
     performers = []
 
     for member in members:
-        from app.services.analytics import get_member_e1rm_series
         series = get_member_e1rm_series(member.id, db)
         for ex_id, points in series.items():
             if len(points) < 2:
                 continue
-            # Find first point at or after month_start
-            before = [p for p in points if p.date < month_start]
-            after = [p for p in points if p.date >= month_start]
-            if not before or not after:
+            # Filter to on or before end date
+            in_range = [p for p in points if p.date <= end]
+            if not in_range:
                 continue
-            baseline = before[-1].e1rm
-            current = after[-1].e1rm
+            if date_from:
+                before = [p for p in in_range if p.date < date_from]
+                after  = [p for p in in_range if p.date >= date_from]
+                if not before or not after:
+                    continue
+                baseline = before[-1].e1rm
+                current  = after[-1].e1rm
+            else:
+                # All-time: compare very first logged e1RM to most recent
+                if len(in_range) < 2:
+                    continue
+                baseline = in_range[0].e1rm
+                current  = in_range[-1].e1rm
             if baseline > 0:
                 gain_pct = round((current - baseline) / baseline * 100, 1)
                 if gain_pct > 0:
+                    best = max(in_range if not date_from else after, key=lambda p: p.e1rm)
                     performers.append(
                         TopPerformer(
                             member_id=member.id,
                             member_name=member.name,
-                            exercise_name=after[-1].exercise_name,
+                            exercise_name=best.exercise_name,
                             e1rm_gain_pct=gain_pct,
                             current_e1rm=current,
                         )
@@ -220,3 +283,53 @@ def top_performers(
 
     performers.sort(key=lambda x: x.e1rm_gain_pct, reverse=True)
     return performers[:10]
+
+
+@router.get("/top-rep-gainers", response_model=List[TopRepGainer])
+def top_rep_gainers(
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+    db: Session = Depends(get_db),
+    _: bool = Depends(get_current_user),
+):
+    """Members with highest % rep gain on bodyweight exercises over the given period."""
+    end = date_to or date.today()
+    members = db.query(Member).filter(Member.active == True).all()
+    gainers = []
+
+    for member in members:
+        series = get_member_reps_series(member.id, db)
+        for ex_id, points in series.items():
+            if len(points) < 2:
+                continue
+            in_range = [p for p in points if p.date <= end]
+            if not in_range:
+                continue
+            if date_from:
+                before = [p for p in in_range if p.date < date_from]
+                after = [p for p in in_range if p.date >= date_from]
+                if not before or not after:
+                    continue
+                baseline = before[-1].reps
+                current = after[-1].reps
+            else:
+                if len(in_range) < 2:
+                    continue
+                baseline = in_range[0].reps
+                current = in_range[-1].reps
+            if baseline > 0:
+                gain_pct = round((current - baseline) / baseline * 100, 1)
+                if gain_pct > 0:
+                    best = max(in_range if not date_from else after, key=lambda p: p.reps)
+                    gainers.append(
+                        TopRepGainer(
+                            member_id=member.id,
+                            member_name=member.name,
+                            exercise_name=best.exercise_name,
+                            reps_gain_pct=gain_pct,
+                            current_reps=current,
+                        )
+                    )
+
+    gainers.sort(key=lambda x: x.reps_gain_pct, reverse=True)
+    return gainers[:10]

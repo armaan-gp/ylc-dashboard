@@ -21,7 +21,7 @@ class SessionLog(Base):
 
     @property
     def e1rm(self) -> float:
-        if self.reps and self.reps > 0:
+        if self.reps and self.reps > 1:
             return round(self.weight_lbs * (1 + self.reps / 30), 1)
         return round(self.weight_lbs, 1)
 

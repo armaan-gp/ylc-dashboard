@@ -19,4 +19,13 @@ export const membersApi = {
 
   getExercises: (id: number) =>
     client.get<MemberExerciseLastLog[]>(`/api/members/${id}/exercises`).then((r) => r.data),
+
+  getArchivedExercises: (id: number) =>
+    client.get<{ exercise_id: number; exercise_name: string }[]>(`/api/members/${id}/archived-exercises`).then((r) => r.data),
+
+  archiveExercise: (memberId: number, exerciseId: number) =>
+    client.post(`/api/members/${memberId}/archive/${exerciseId}`),
+
+  unarchiveExercise: (memberId: number, exerciseId: number) =>
+    client.delete(`/api/members/${memberId}/archive/${exerciseId}`),
 };

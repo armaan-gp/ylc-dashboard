@@ -1,4 +1,4 @@
-from datetime import date
+import datetime
 from typing import Optional, List
 from pydantic import BaseModel, field_validator
 
@@ -6,7 +6,7 @@ from pydantic import BaseModel, field_validator
 class SessionLogBase(BaseModel):
     member_id: int
     exercise_id: int
-    date: Optional[date] = None
+    date: Optional[datetime.date] = None
     sets: int
     reps: int
     weight_lbs: float
@@ -33,7 +33,7 @@ class SessionLogCreate(SessionLogBase):
 
 
 class SessionLogUpdate(BaseModel):
-    date: Optional[date] = None
+    date: Optional[datetime.date] = None
     sets: Optional[int] = None
     reps: Optional[int] = None
     weight_lbs: Optional[float] = None
@@ -45,7 +45,7 @@ class SessionLogRead(BaseModel):
     id: int
     member_id: int
     exercise_id: int
-    date: date
+    date: datetime.date
     sets: int
     reps: int
     weight_lbs: float

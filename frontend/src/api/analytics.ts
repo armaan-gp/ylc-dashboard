@@ -9,6 +9,9 @@ import type {
   NeedsAttentionMember,
   WeeklyVolume,
   TopPerformer,
+  TopRepGainer,
+  RepsDataPoint,
+  RepsProjectionResult,
 } from '@/types/analytics';
 
 export const analyticsApi = {
@@ -50,6 +53,26 @@ export const analyticsApi = {
   clubVolume: () =>
     client.get<WeeklyVolume[]>('/api/analytics/club-volume').then((r) => r.data),
 
-  topPerformers: () =>
-    client.get<TopPerformer[]>('/api/analytics/top-performers').then((r) => r.data),
+  topPerformers: (params?: { date_from?: string; date_to?: string }) =>
+    client.get<TopPerformer[]>('/api/analytics/top-performers', { params }).then((r) => r.data),
+
+  topRepGainers: (params?: { date_from?: string; date_to?: string }) =>
+    client.get<TopRepGainer[]>('/api/analytics/top-rep-gainers', { params }).then((r) => r.data),
+
+  memberReps: (memberId: number, exerciseId?: number) =>
+    client
+      .get<RepsDataPoint[]>(`/api/analytics/member/${memberId}/reps`, {
+        params: exerciseId ? { exercise_id: exerciseId } : {},
+      })
+      .then((r) => r.data),
+
+  memberRepsProjection: (memberId: number) =>
+    client
+      .get<RepsProjectionResult[]>(`/api/analytics/member/${memberId}/reps-projection`)
+      .then((r) => r.data),
+
+  memberRepsPlateau: (memberId: number) =>
+    client
+      .get<PlateauResult[]>(`/api/analytics/member/${memberId}/reps-plateau`)
+      .then((r) => r.data),
 };

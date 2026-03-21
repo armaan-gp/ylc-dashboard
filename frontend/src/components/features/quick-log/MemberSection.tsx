@@ -3,6 +3,7 @@ import ExerciseLogRow from './ExerciseLogRow';
 import type { Member } from '@/types/member';
 import type { Exercise } from '@/types/exercise';
 import type { LogRow } from '@/types/sessionLog';
+import { membersApi } from '@/api/members';
 
 interface Props {
   sectionId: string;
@@ -11,6 +12,7 @@ interface Props {
   loadMemberExercises: (memberId: number) => Promise<LogRow[]>;
   createExercise: (name: string, category: string, tracking_type: 'weight_reps' | 'weight_duration') => Promise<Exercise>;
   onDataChange: (sectionId: string, memberId: number | null, logRows: LogRow[]) => void;
+  onExerciseCreated: (exercise: Exercise) => void;
   onRemove: () => void;
   canRemove: boolean;
 }
@@ -22,6 +24,7 @@ export default function MemberSection({
   loadMemberExercises,
   createExercise,
   onDataChange,
+  onExerciseCreated,
   onRemove,
   canRemove,
 }: Props) {
@@ -88,6 +91,9 @@ export default function MemberSection({
   };
 
   const removeRow = (exerciseId: number) => {
+    if (memberId) {
+      membersApi.archiveExercise(memberId, exerciseId).catch(() => {});
+    }
     setLogRows((prev) => {
       const updated = prev.filter((r) => r.exercise_id !== exerciseId);
       onDataChange(sectionId, memberId, updated);
@@ -98,6 +104,9 @@ export default function MemberSection({
   const handleAddExisting = (ex: Exercise) => {
     setExSearch('');
     setShowExDropdown(false);
+    if (memberId) {
+      membersApi.unarchiveExercise(memberId, ex.id).catch(() => {});
+    }
     const newRow: LogRow = {
       exercise_id: ex.id,
       exercise_name: ex.name,
@@ -122,6 +131,7 @@ export default function MemberSection({
   const handleCreateExercise = async () => {
     if (!newExName.trim()) return;
     const ex = await createExercise(newExName.trim(), 'Other', newExTrackingType);
+    onExerciseCreated(ex);
     const newRow: LogRow = {
       exercise_id: ex.id,
       exercise_name: ex.name,
@@ -211,8 +221,8 @@ export default function MemberSection({
             {logRows.length > 0 && (
               <div className="flex items-center gap-3 mb-1 px-1">
                 <div className="flex-1 text-xs font-medium text-gray-400 uppercase tracking-wide">Exercise</div>
-                <div className="w-24 text-xs font-medium text-gray-400 uppercase tracking-wide text-center">Reps / Sec</div>
                 <div className="w-28 text-xs font-medium text-gray-400 uppercase tracking-wide text-center">Weight (lbs)</div>
+                <div className="w-24 text-xs font-medium text-gray-400 uppercase tracking-wide text-center">Reps / Sec</div>
                 <div className="w-6" />
               </div>
             )}

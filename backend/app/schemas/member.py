@@ -35,7 +35,6 @@ class MemberRead(BaseModel):
     active: bool
     notes: Optional[str]
     last_session: Optional[date] = None
-    session_count: int = 0
 
     model_config = {"from_attributes": True}
 

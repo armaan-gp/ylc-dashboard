@@ -72,3 +72,28 @@ class TopPerformer(BaseModel):
     exercise_name: str
     e1rm_gain_pct: float
     current_e1rm: float
+
+
+class TopRepGainer(BaseModel):
+    member_id: int
+    member_name: str
+    exercise_name: str
+    reps_gain_pct: float
+    current_reps: int
+
+
+class RepsDataPoint(BaseModel):
+    date: date
+    reps: int
+    exercise_name: str
+    is_pr: bool = False
+
+
+class RepsProjectionResult(BaseModel):
+    exercise_id: int
+    exercise_name: str
+    current_reps: int
+    projected_4wk: float
+    projected_8wk: float
+    r_squared: float
+    insufficient_data: bool = False

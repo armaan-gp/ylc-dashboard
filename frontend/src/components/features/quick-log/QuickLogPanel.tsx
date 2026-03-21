@@ -51,10 +51,8 @@ export default function QuickLogPanel() {
 
     const success = await saveAll(payload, logDate);
     if (success) {
-      // Reload exercise lists for members who had data saved
-      setSections((prev) =>
-        prev.map((s) => ({ ...s, logRows: [] }))
-      );
+      setSections([{ id: newSectionId(), memberId: null, logRows: [] }]);
+      setLogDate(new Date().toISOString().split('T')[0]);
     }
   };
 
@@ -87,6 +85,7 @@ export default function QuickLogPanel() {
             loadMemberExercises={loadMemberExercises}
             createExercise={createExercise}
             onDataChange={handleDataChange}
+            onExerciseCreated={(ex) => setAllExercises((prev) => [...prev, ex])}
             onRemove={() => removeSection(section.id)}
             canRemove={sections.length > 1}
           />

@@ -68,3 +68,28 @@ export interface TopPerformer {
   e1rm_gain_pct: number;
   current_e1rm: number;
 }
+
+export interface TopRepGainer {
+  member_id: number;
+  member_name: string;
+  exercise_name: string;
+  reps_gain_pct: number;
+  current_reps: number;
+}
+
+export interface RepsDataPoint {
+  date: string;
+  reps: number;
+  exercise_name: string;
+  is_pr: boolean;
+}
+
+export interface RepsProjectionResult {
+  exercise_id: number;
+  exercise_name: string;
+  current_reps: number;
+  projected_4wk: number;
+  projected_8wk: number;
+  r_squared: number;
+  insufficient_data: boolean;
+}

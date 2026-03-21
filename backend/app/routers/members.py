@@ -2,13 +2,14 @@ from datetime import date
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc
+from sqlalchemy import desc
 
 from app.database import get_db
 from app.auth import get_current_user
 from app.models.member import Member
 from app.models.session_log import SessionLog
 from app.models.exercise import Exercise
+from app.models.member_archived_exercise import MemberArchivedExercise
 from app.schemas.member import MemberCreate, MemberUpdate, MemberRead, MemberExerciseLastLog
 
 router = APIRouter(prefix="/api/members", tags=["members"])
@@ -21,7 +22,6 @@ def enrich_member(member: Member, db: Session) -> MemberRead:
         .order_by(desc(SessionLog.date))
         .first()
     )
-    count = db.query(func.count(SessionLog.id)).filter(SessionLog.member_id == member.id).scalar()
     return MemberRead(
         id=member.id,
         name=member.name,
@@ -29,7 +29,6 @@ def enrich_member(member: Member, db: Session) -> MemberRead:
         active=member.active,
         notes=member.notes,
         last_session=last_log.date if last_log else None,
-        session_count=count or 0,
     )
 
 
@@ -123,14 +122,20 @@ def get_member_exercises(
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
 
-    # Get distinct exercise IDs for this member
+    # Get archived exercise IDs for this member
+    archived_ids = {
+        r[0] for r in db.query(MemberArchivedExercise.exercise_id)
+        .filter(MemberArchivedExercise.member_id == member_id).all()
+    }
+
+    # Get distinct exercise IDs for this member, excluding archived
     exercise_ids = (
         db.query(SessionLog.exercise_id)
         .filter(SessionLog.member_id == member_id)
         .distinct()
         .all()
     )
-    exercise_ids = [r[0] for r in exercise_ids]
+    exercise_ids = [r[0] for r in exercise_ids if r[0] not in archived_ids]
 
     result = []
     for ex_id in exercise_ids:
@@ -159,3 +164,55 @@ def get_member_exercises(
         )
     result.sort(key=lambda x: x.exercise_name)
     return result
+
+
+@router.get("/{member_id}/archived-exercises")
+def get_archived_exercises(
+    member_id: int,
+    db: Session = Depends(get_db),
+    _: bool = Depends(get_current_user),
+):
+    member = db.query(Member).filter(Member.id == member_id).first()
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    rows = (
+        db.query(MemberArchivedExercise, Exercise)
+        .join(Exercise, Exercise.id == MemberArchivedExercise.exercise_id)
+        .filter(MemberArchivedExercise.member_id == member_id)
+        .all()
+    )
+    return [{"exercise_id": r.MemberArchivedExercise.exercise_id, "exercise_name": r.Exercise.name} for r in rows]
+
+
+@router.post("/{member_id}/archive/{exercise_id}", status_code=status.HTTP_204_NO_CONTENT)
+def archive_exercise(
+    member_id: int,
+    exercise_id: int,
+    db: Session = Depends(get_db),
+    _: bool = Depends(get_current_user),
+):
+    existing = (
+        db.query(MemberArchivedExercise)
+        .filter(MemberArchivedExercise.member_id == member_id, MemberArchivedExercise.exercise_id == exercise_id)
+        .first()
+    )
+    if not existing:
+        db.add(MemberArchivedExercise(member_id=member_id, exercise_id=exercise_id))
+        db.commit()
+
+
+@router.delete("/{member_id}/archive/{exercise_id}", status_code=status.HTTP_204_NO_CONTENT)
+def unarchive_exercise(
+    member_id: int,
+    exercise_id: int,
+    db: Session = Depends(get_db),
+    _: bool = Depends(get_current_user),
+):
+    row = (
+        db.query(MemberArchivedExercise)
+        .filter(MemberArchivedExercise.member_id == member_id, MemberArchivedExercise.exercise_id == exercise_id)
+        .first()
+    )
+    if row:
+        db.delete(row)
+        db.commit()

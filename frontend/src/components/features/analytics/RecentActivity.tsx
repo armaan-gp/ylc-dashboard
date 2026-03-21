@@ -50,8 +50,14 @@ export default function RecentActivity({ logs, loading }: Props) {
                 </span>
               </div>
               <p className="text-xs text-gray-400 mt-0.5">
-                {log.reps} reps @ {log.weight_lbs} lbs
-                <span className="ml-1.5 text-primary-500">e1RM {log.e1rm} lbs</span>
+                {log.weight_lbs === 0
+                  ? `${log.reps} reps · bodyweight`
+                  : log.duration_seconds != null
+                    ? `${log.duration_seconds}s @ ${log.weight_lbs} lbs`
+                    : `${log.reps} reps @ ${log.weight_lbs} lbs`}
+                {log.weight_lbs > 0 && (
+                  <span className="ml-1.5 text-primary-500">e1RM {log.e1rm} lbs</span>
+                )}
               </p>
             </li>
           ))}

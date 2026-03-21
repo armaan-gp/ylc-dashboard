@@ -5,7 +5,6 @@ export interface Member {
   active: boolean;
   notes: string | null;
   last_session: string | null;
-  session_count: number;
 }
 
 export interface MemberCreate {

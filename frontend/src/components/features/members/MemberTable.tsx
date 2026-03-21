@@ -22,7 +22,6 @@ export default function MemberTable({ members, onDeactivate, onEdit, onReactivat
             <tr>
               <th className="table-header">Name</th>
               <th className="table-header">Joined</th>
-              <th className="table-header">Sessions</th>
               <th className="table-header">Last Session</th>
               <th className="table-header">Status</th>
               <th className="table-header w-24"></th>
@@ -41,7 +40,6 @@ export default function MemberTable({ members, onDeactivate, onEdit, onReactivat
                     month: 'short', day: 'numeric', year: 'numeric',
                   })}
                 </td>
-                <td className="table-cell">{m.session_count}</td>
                 <td className="table-cell text-gray-500">
                   {m.last_session
                     ? new Date(m.last_session + 'T00:00:00').toLocaleDateString('en-US', {
