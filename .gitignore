@@ -21,6 +21,9 @@ build/
 *.db
 *.sqlite3
 
+# Production frontend build (generated during deploy)
+backend/static_frontend/
+
 # Node
 node_modules/
 dist/
