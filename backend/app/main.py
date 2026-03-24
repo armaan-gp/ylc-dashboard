@@ -66,7 +66,7 @@ def health():
 
 
 # Serve the built React frontend (production only)
-_STATIC_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "static_frontend")
+_STATIC_DIR = os.path.join(os.path.dirname(__file__), "..", "static_frontend")
 if os.path.isdir(_STATIC_DIR):
     app.mount("/assets", StaticFiles(directory=os.path.join(_STATIC_DIR, "assets")), name="assets")
 
