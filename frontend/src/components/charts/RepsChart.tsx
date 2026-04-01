@@ -13,6 +13,7 @@ interface Props {
   data: RepsDataPoint[];
   projection?: RepsProjectionResult | null;
   exerciseName: string;
+  isDuration?: boolean;
 }
 
 interface ChartPoint {
@@ -36,7 +37,7 @@ const CustomDot = (props: { cx?: number; cy?: number; payload?: ChartPoint }) =>
   );
 };
 
-export default function RepsChart({ data, projection }: Props) {
+export default function RepsChart({ data, projection, isDuration }: Props) {
   if (data.length === 0) {
     return (
       <div className="flex items-center justify-center h-48 text-sm text-gray-400">
@@ -47,7 +48,7 @@ export default function RepsChart({ data, projection }: Props) {
 
   const chartData: ChartPoint[] = data.map((d) => ({
     date: d.date,
-    reps: d.reps,
+    reps: isDuration ? (d.duration_seconds ?? d.reps) : d.reps,
     is_pr: d.is_pr,
   }));
 
@@ -75,12 +76,15 @@ export default function RepsChart({ data, projection }: Props) {
   const minVal = Math.max(0, Math.floor((Math.min(...allValues) - 2) / 1) * 1);
   const maxVal = Math.ceil((Math.max(...allValues) + 2) / 1) * 1;
 
+  const unit = isDuration ? 's' : ' reps';
+  const seriesLabel = isDuration ? 'Max Duration' : 'Max Reps';
+
   return (
     <div>
       {projection && !projection.insufficient_data && (
         <div className="flex items-center gap-4 text-xs text-gray-500 mb-2">
-          <span>4-wk projection: <strong className="text-green-600">{projection.projected_4wk} reps</strong></span>
-          <span>8-wk: <strong className="text-green-600">{projection.projected_8wk} reps</strong></span>
+          <span>4-wk projection: <strong className="text-green-600">{projection.projected_4wk}{unit}</strong></span>
+          <span>8-wk: <strong className="text-green-600">{projection.projected_8wk}{unit}</strong></span>
           {projection.r_squared < 0.4 && <span className="text-yellow-600">(low confidence)</span>}
         </div>
       )}
@@ -102,13 +106,13 @@ export default function RepsChart({ data, projection }: Props) {
             tick={{ fontSize: 11, fill: '#9ca3af' }}
             axisLine={false}
             tickLine={false}
-            tickFormatter={(v) => `${v}`}
+            tickFormatter={(v) => `${v}${isDuration ? 's' : ''}`}
             allowDecimals={false}
           />
           <Tooltip
             formatter={(val, name) => [
-              `${val} reps`,
-              name === 'reps' ? 'Max Reps' : 'Projection',
+              `${val}${unit}`,
+              name === 'reps' ? seriesLabel : 'Projection',
             ]}
             labelFormatter={(label) => formatDate(label)}
             contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e5e7eb' }}
@@ -121,7 +125,7 @@ export default function RepsChart({ data, projection }: Props) {
             dot={<CustomDot />}
             activeDot={{ r: 5 }}
             connectNulls={false}
-            name="Max Reps"
+            name={seriesLabel}
           />
           {projection && !projection.insufficient_data && (
             <Line

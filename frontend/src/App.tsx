@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/store/authStore';
-import { applyPalette, useThemeStore } from '@/store/themeStore';
+import { useThemeStore } from '@/store/themeStore';
 import Layout from '@/components/layout/Layout';
 import LoginPage from '@/pages/LoginPage';
 import DashboardPage from '@/pages/DashboardPage';
@@ -72,9 +72,14 @@ function AppRoutes() {
 }
 
 function ThemeBootstrap() {
-  const { palette } = useThemeStore();
+  const { applyColor, activeColor } = useThemeStore();
   useEffect(() => {
-    applyPalette(palette);
+    // Apply cached color immediately to avoid flash, then fetch authoritative value from server
+    applyColor(activeColor);
+    fetch('/api/settings/theme')
+      .then((r) => r.json())
+      .then((data) => { if (data?.color) applyColor(data.color); })
+      .catch(() => {});
   }, []);
   return null;
 }

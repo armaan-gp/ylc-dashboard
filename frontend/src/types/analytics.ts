@@ -75,11 +75,13 @@ export interface TopRepGainer {
   exercise_name: string;
   reps_gain_pct: number;
   current_reps: number;
+  is_duration: boolean;
 }
 
 export interface RepsDataPoint {
   date: string;
   reps: number;
+  duration_seconds?: number;
   exercise_name: string;
   is_pr: boolean;
 }

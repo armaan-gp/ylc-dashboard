@@ -1,39 +1,42 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import client from '@/api/client';
-import { PRESETS, useThemeStore } from '@/store/themeStore';
+import { PRESETS, generatePalette, useThemeStore } from '@/store/themeStore';
 
 export default function SettingsPage() {
-  const [currentPw, setCurrentPw] = useState('');
-  const [newPw, setNewPw] = useState('');
-  const [confirmPw, setConfirmPw] = useState('');
+  const { activeColor, applyColor } = useThemeStore();
+
+  // Local pending state — not applied globally until Save is clicked
+  const [pendingColor, setPendingColor] = useState(activeColor);
+  const [colorInput, setColorInput] = useState(activeColor);
   const [saving, setSaving] = useState(false);
 
-  const { activePresetId, customColor, setPreset, setCustomColor } = useThemeStore();
-  const [colorInput, setColorInput] = useState(customColor);
+  const pendingPresetId = PRESETS.find((p) => p.palette[600] === pendingColor)?.id ?? 'custom';
+  const previewPalette = generatePalette(pendingColor);
+  const hasUnsaved = pendingColor !== activeColor;
 
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newPw !== confirmPw) {
-      toast.error('New passwords do not match');
-      return;
-    }
-    if (newPw.length < 6) {
-      toast.error('Password must be at least 6 characters');
-      return;
-    }
+  const handlePresetClick = (presetColor: string) => {
+    setPendingColor(presetColor);
+    setColorInput(presetColor);
+  };
 
+  const handleCustomApply = () => {
+    const hex = colorInput.trim();
+    if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
+      setPendingColor(hex);
+    } else {
+      toast.error('Enter a valid 6-digit hex color (e.g. #2563eb)');
+    }
+  };
+
+  const handleSave = async () => {
     setSaving(true);
     try {
-      await client.post('/api/auth/change-password', {
-        current_password: currentPw,
-        new_password: newPw,
-      });
-      toast.success('Password changed successfully');
-      setCurrentPw(''); setNewPw(''); setConfirmPw('');
-    } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Failed to change password';
-      toast.error(msg);
+      await client.put('/api/settings/theme', { color: pendingColor });
+      applyColor(pendingColor);
+      toast.success('Theme saved');
+    } catch {
+      toast.error('Failed to save theme');
     } finally {
       setSaving(false);
     }
@@ -46,17 +49,22 @@ export default function SettingsPage() {
       <div className="max-w-2xl space-y-6">
         {/* Color Theme */}
         <div className="card p-5">
-          <h2 className="text-sm font-semibold text-gray-800 mb-1">Color Theme</h2>
-          <p className="text-xs text-gray-500 mb-4">Choose a preset or enter any hex color to generate a custom palette.</p>
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-sm font-semibold text-gray-800">Color Theme</h2>
+            {hasUnsaved && (
+              <span className="text-xs text-amber-600 font-medium">Unsaved changes</span>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 mb-4">Choose a preset or enter any hex color. Changes take effect after saving.</p>
 
           {/* Preset swatches */}
           <div className="grid grid-cols-4 gap-3 mb-5">
             {PRESETS.map((preset) => (
               <button
                 key={preset.id}
-                onClick={() => setPreset(preset)}
+                onClick={() => handlePresetClick(preset.palette[600])}
                 className={`flex flex-col items-center gap-1.5 p-2.5 rounded-lg border-2 transition-all ${
-                  activePresetId === preset.id
+                  pendingPresetId === preset.id
                     ? 'border-gray-800 shadow-sm'
                     : 'border-transparent hover:border-gray-300'
                 }`}
@@ -67,7 +75,7 @@ export default function SettingsPage() {
                   <div className="w-4 h-4 rounded-full" style={{ backgroundColor: preset.palette[700] }} />
                 </div>
                 <span className="text-xs text-gray-600 font-medium">{preset.name}</span>
-                {activePresetId === preset.id && (
+                {pendingPresetId === preset.id && (
                   <span className="text-xs text-gray-800 font-semibold">✓</span>
                 )}
               </button>
@@ -85,51 +93,62 @@ export default function SettingsPage() {
                   placeholder="#2563eb"
                   value={colorInput}
                   onChange={(e) => setColorInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      const hex = colorInput.trim();
-                      if (/^#[0-9a-fA-F]{6}$/.test(hex)) setCustomColor(hex);
-                      else toast.error('Enter a valid 6-digit hex color (e.g. #2563eb)');
-                    }
-                  }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleCustomApply(); }}
                 />
                 <div
                   className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border border-gray-200"
-                  style={{ backgroundColor: /^#[0-9a-fA-F]{6}$/.test(colorInput) ? colorInput : '#2563eb' }}
+                  style={{ backgroundColor: /^#[0-9a-fA-F]{6}$/.test(colorInput) ? colorInput : pendingColor }}
                 />
               </div>
               <input
                 type="color"
                 className="h-9 w-12 rounded border border-gray-300 cursor-pointer p-0.5 bg-white"
-                value={/^#[0-9a-fA-F]{6}$/.test(colorInput) ? colorInput : '#2563eb'}
+                value={/^#[0-9a-fA-F]{6}$/.test(colorInput) ? colorInput : pendingColor}
                 onChange={(e) => {
                   setColorInput(e.target.value);
-                  setCustomColor(e.target.value);
+                  setPendingColor(e.target.value);
                 }}
               />
-              <button
-                className="btn-primary btn-sm"
-                onClick={() => {
-                  const hex = colorInput.trim();
-                  if (/^#[0-9a-fA-F]{6}$/.test(hex)) setCustomColor(hex);
-                  else toast.error('Enter a valid 6-digit hex color (e.g. #2563eb)');
-                }}
-              >
+              <button className="btn-secondary btn-sm" onClick={handleCustomApply}>
                 Apply
               </button>
             </div>
             <p className="text-xs text-gray-400 mt-2">Type a hex value and press Enter or click Apply. The color picker also works.</p>
           </div>
 
-          {/* Live preview */}
+          {/* Preview — uses inline styles so it reflects pending color without affecting the rest of the app */}
           <div className="border-t border-gray-100 pt-4 mt-4">
             <p className="text-xs font-medium text-gray-600 mb-2">Preview</p>
             <div className="flex items-center gap-2 flex-wrap">
-              <button className="btn-primary btn-sm">Primary Button</button>
+              <button
+                className="btn btn-sm text-white"
+                style={{ backgroundColor: previewPalette[600] }}
+              >
+                Primary Button
+              </button>
               <button className="btn-secondary btn-sm">Secondary</button>
-              <span className="badge-blue">Badge</span>
-              <span className="text-sm text-primary-600 font-medium">Link text</span>
+              <span
+                className="badge text-xs font-medium px-2.5 py-0.5 rounded-full"
+                style={{ backgroundColor: previewPalette[100], color: previewPalette[800] }}
+              >
+                Badge
+              </span>
+              <span className="text-sm font-medium" style={{ color: previewPalette[600] }}>
+                Link text
+              </span>
             </div>
+          </div>
+
+          {/* Save button */}
+          <div className="border-t border-gray-100 pt-4 mt-4 flex justify-end">
+            <button
+              className="btn text-white btn-sm"
+              style={{ backgroundColor: hasUnsaved ? previewPalette[600] : undefined }}
+              disabled={!hasUnsaved || saving}
+              onClick={handleSave}
+            >
+              {saving ? 'Saving…' : 'Save Theme'}
+            </button>
           </div>
         </div>
 
@@ -152,59 +171,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Change Password */}
-        <div className="card p-5">
-          <h2 className="text-sm font-semibold text-gray-800 mb-4">Change Officer Password</h2>
-          <form onSubmit={handleChangePassword} className="space-y-3">
-            <div>
-              <label className="label">Current Password</label>
-              <input
-                type="password"
-                className="input"
-                value={currentPw}
-                onChange={(e) => setCurrentPw(e.target.value)}
-                placeholder="Current password"
-                autoComplete="current-password"
-              />
-            </div>
-            <div>
-              <label className="label">New Password</label>
-              <input
-                type="password"
-                className="input"
-                value={newPw}
-                onChange={(e) => setNewPw(e.target.value)}
-                placeholder="New password (min. 6 characters)"
-                autoComplete="new-password"
-              />
-            </div>
-            <div>
-              <label className="label">Confirm New Password</label>
-              <input
-                type="password"
-                className="input"
-                value={confirmPw}
-                onChange={(e) => setConfirmPw(e.target.value)}
-                placeholder="Confirm new password"
-                autoComplete="new-password"
-              />
-            </div>
-            <div className="pt-1">
-              <button
-                type="submit"
-                className="btn-primary btn-sm"
-                disabled={saving || !currentPw || !newPw || !confirmPw}
-              >
-                {saving ? 'Saving...' : 'Change Password'}
-              </button>
-            </div>
-          </form>
-          <p className="text-xs text-gray-400 mt-3">
-            Note: After changing the password, you'll need to update the <code>APP_PASSWORD_HASH</code> environment variable on your server with the new bcrypt hash.
-          </p>
-        </div>
-
-        {/* Instructions */}
+        {/* Password Hash Instructions */}
         <div className="card p-5 bg-gray-50">
           <h2 className="text-sm font-semibold text-gray-700 mb-3">Password Hash Instructions</h2>
           <p className="text-xs text-gray-600 leading-relaxed mb-2">To update the server password, generate a new bcrypt hash:</p>

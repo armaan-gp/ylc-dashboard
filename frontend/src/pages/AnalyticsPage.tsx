@@ -201,11 +201,11 @@ export default function AnalyticsPage() {
             </table>
           )}
         </div>
-        {/* Top Rep Gainers */}
+        {/* Top Rep/Duration Gainers */}
         <div className="card overflow-hidden lg:col-span-2">
           <div className="px-5 py-4 border-b border-gray-100">
-            <h2 className="text-sm font-semibold text-gray-800">Top Rep Gainers</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Bodyweight exercises — ranked by % rep gain — {rangeLabel()}</p>
+            <h2 className="text-sm font-semibold text-gray-800">Top Bodyweight Gainers</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Bodyweight exercises — ranked by % gain — {rangeLabel()}</p>
           </div>
 
           {topLoading ? (
@@ -214,7 +214,7 @@ export default function AnalyticsPage() {
             </div>
           ) : topRepGainers.length === 0 ? (
             <div className="px-5 py-8 text-center text-sm text-gray-400">
-              No bodyweight rep data for this period. Log sessions with weight set to 0 to track rep growth.
+              No bodyweight data for this period. Log sessions with weight set to 0 to track rep/duration growth.
             </div>
           ) : (
             <table className="w-full">
@@ -223,8 +223,8 @@ export default function AnalyticsPage() {
                   <th className="table-header w-8">#</th>
                   <th className="table-header">Member</th>
                   <th className="table-header">Exercise</th>
-                  <th className="table-header">Rep Gain</th>
-                  <th className="table-header">Current Reps</th>
+                  <th className="table-header">Gain</th>
+                  <th className="table-header">Current</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -239,13 +239,15 @@ export default function AnalyticsPage() {
                     <td className="table-cell text-gray-500">
                       <span className="inline-flex items-center gap-1.5">
                         {g.exercise_name}
-                        <span className="text-xs text-green-600 font-medium">BW</span>
+                        <span className="text-xs text-green-600 font-medium">{g.is_duration ? 'DUR' : 'BW'}</span>
                       </span>
                     </td>
                     <td className="table-cell">
                       <span className="badge-green">+{g.reps_gain_pct}%</span>
                     </td>
-                    <td className="table-cell text-green-600 font-medium">{g.current_reps} reps</td>
+                    <td className="table-cell text-green-600 font-medium">
+                      {g.is_duration ? `${g.current_reps}s` : `${g.current_reps} reps`}
+                    </td>
                   </tr>
                 ))}
               </tbody>

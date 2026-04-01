@@ -80,11 +80,13 @@ class TopRepGainer(BaseModel):
     exercise_name: str
     reps_gain_pct: float
     current_reps: int
+    is_duration: bool = False
 
 
 class RepsDataPoint(BaseModel):
     date: date
     reps: int
+    duration_seconds: Optional[float] = None
     exercise_name: str
     is_pr: bool = False
 

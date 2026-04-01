@@ -248,29 +248,18 @@ def top_performers(
     for member in members:
         series = get_member_e1rm_series(member.id, db)
         for ex_id, points in series.items():
-            if len(points) < 2:
-                continue
-            # Filter to on or before end date
-            in_range = [p for p in points if p.date <= end]
-            if not in_range:
-                continue
             if date_from:
-                before = [p for p in in_range if p.date < date_from]
-                after  = [p for p in in_range if p.date >= date_from]
-                if not before or not after:
-                    continue
-                baseline = before[-1].e1rm
-                current  = after[-1].e1rm
+                in_range = [p for p in points if date_from <= p.date <= end]
             else:
-                # All-time: compare very first logged e1RM to most recent
-                if len(in_range) < 2:
-                    continue
-                baseline = in_range[0].e1rm
-                current  = in_range[-1].e1rm
+                in_range = [p for p in points if p.date <= end]
+            if len(in_range) < 2:
+                continue
+            baseline = in_range[0].e1rm
+            current  = in_range[-1].e1rm
             if baseline > 0:
                 gain_pct = round((current - baseline) / baseline * 100, 1)
                 if gain_pct > 0:
-                    best = max(in_range if not date_from else after, key=lambda p: p.e1rm)
+                    best = max(in_range, key=lambda p: p.e1rm)
                     performers.append(
                         TopPerformer(
                             member_id=member.id,
@@ -292,7 +281,7 @@ def top_rep_gainers(
     db: Session = Depends(get_db),
     _: bool = Depends(get_current_user),
 ):
-    """Members with highest % rep gain on bodyweight exercises over the given period."""
+    """Members with highest % rep/duration gain on bodyweight exercises over the given period."""
     end = date_to or date.today()
     members = db.query(Member).filter(Member.active == True).all()
     gainers = []
@@ -300,27 +289,19 @@ def top_rep_gainers(
     for member in members:
         series = get_member_reps_series(member.id, db)
         for ex_id, points in series.items():
-            if len(points) < 2:
-                continue
-            in_range = [p for p in points if p.date <= end]
-            if not in_range:
-                continue
             if date_from:
-                before = [p for p in in_range if p.date < date_from]
-                after = [p for p in in_range if p.date >= date_from]
-                if not before or not after:
-                    continue
-                baseline = before[-1].reps
-                current = after[-1].reps
+                in_range = [p for p in points if date_from <= p.date <= end]
             else:
-                if len(in_range) < 2:
-                    continue
-                baseline = in_range[0].reps
-                current = in_range[-1].reps
+                in_range = [p for p in points if p.date <= end]
+            if len(in_range) < 2:
+                continue
+            is_dur = any(p.duration_seconds is not None for p in in_range)
+            baseline = in_range[0].reps
+            current = in_range[-1].reps
             if baseline > 0:
                 gain_pct = round((current - baseline) / baseline * 100, 1)
                 if gain_pct > 0:
-                    best = max(in_range if not date_from else after, key=lambda p: p.reps)
+                    best = max(in_range, key=lambda p: p.reps)
                     gainers.append(
                         TopRepGainer(
                             member_id=member.id,
@@ -328,6 +309,7 @@ def top_rep_gainers(
                             exercise_name=best.exercise_name,
                             reps_gain_pct=gain_pct,
                             current_reps=current,
+                            is_duration=is_dur,
                         )
                     )
 

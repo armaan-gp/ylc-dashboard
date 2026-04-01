@@ -301,7 +301,7 @@ def get_club_weekly_volume(db: Session) -> List[WeeklyVolume]:
 def get_member_reps_series(
     member_id: int, db: Session
 ) -> Dict[int, List[RepsDataPoint]]:
-    """Returns max-reps time series grouped by exercise_id, for bodyweight (weight=0) exercises only."""
+    """Returns max-reps (or max-duration) time series grouped by exercise_id, for bodyweight (weight=0) exercises only."""
     archived_ids = {
         r[0] for r in db.query(MemberArchivedExercise.exercise_id)
         .filter(MemberArchivedExercise.member_id == member_id).all()
@@ -313,31 +313,40 @@ def get_member_reps_series(
         .all()
     )
 
-    by_exercise: Dict[int, Dict[date, int]] = {}
+    by_exercise: Dict[int, Dict[date, float]] = {}
+    duration_exercises: set = set()
+
     for log in logs:
         if log.exercise_id in archived_ids:
             continue
-        if not log.reps or log.reps <= 0:
-            continue
-        if log.exercise_id not in by_exercise:
-            by_exercise[log.exercise_id] = {}
-        existing = by_exercise[log.exercise_id].get(log.date, 0)
-        by_exercise[log.exercise_id][log.date] = max(existing, log.reps)
+        if log.duration_seconds is not None and log.duration_seconds > 0:
+            duration_exercises.add(log.exercise_id)
+            if log.exercise_id not in by_exercise:
+                by_exercise[log.exercise_id] = {}
+            existing = by_exercise[log.exercise_id].get(log.date, 0.0)
+            by_exercise[log.exercise_id][log.date] = max(existing, log.duration_seconds)
+        elif log.reps and log.reps > 0:
+            if log.exercise_id not in by_exercise:
+                by_exercise[log.exercise_id] = {}
+            existing = by_exercise[log.exercise_id].get(log.date, 0.0)
+            by_exercise[log.exercise_id][log.date] = max(existing, float(log.reps))
 
     result: Dict[int, List[RepsDataPoint]] = {}
     for ex_id, date_map in by_exercise.items():
         exercise = db.query(Exercise).filter(Exercise.id == ex_id).first()
         if not exercise:
             continue
+        is_dur = ex_id in duration_exercises
         sorted_dates = sorted(date_map.keys())
-        all_reps = [date_map[d] for d in sorted_dates]
-        max_reps = max(all_reps) if all_reps else 0
+        all_vals = [date_map[d] for d in sorted_dates]
+        max_val = max(all_vals) if all_vals else 0
         result[ex_id] = [
             RepsDataPoint(
                 date=d,
-                reps=date_map[d],
+                reps=round(date_map[d]),
+                duration_seconds=date_map[d] if is_dur else None,
                 exercise_name=exercise.name,
-                is_pr=(date_map[d] == max_reps),
+                is_pr=(date_map[d] == max_val),
             )
             for d in sorted_dates
         ]

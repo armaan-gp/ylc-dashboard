@@ -9,7 +9,7 @@ from sqlalchemy import text
 from app.database import engine, Base
 import app.models  # noqa: F401 — ensure models are registered before create_all
 
-from app.routers import auth, members, exercises, session_logs, analytics
+from app.routers import auth, members, exercises, session_logs, analytics, settings
 
 
 def _run_migrations() -> None:
@@ -31,6 +31,13 @@ def _run_migrations() -> None:
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     _run_migrations()
+    # Seed default app config row if missing
+    from sqlalchemy.orm import Session as OrmSession
+    from app.models.app_config import AppConfig
+    with OrmSession(engine) as session:
+        if not session.get(AppConfig, 1):
+            session.add(AppConfig(id=1, theme_color="#2563eb"))
+            session.commit()
     yield
 
 
@@ -58,6 +65,7 @@ app.include_router(members.router)
 app.include_router(exercises.router)
 app.include_router(session_logs.router)
 app.include_router(analytics.router)
+app.include_router(settings.router)
 
 
 @app.get("/api/health")

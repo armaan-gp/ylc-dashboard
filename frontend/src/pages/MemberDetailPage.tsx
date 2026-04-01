@@ -104,6 +104,7 @@ export default function MemberDetailPage() {
 
   const selectedExercise = exercises.find((e) => e.exercise_id === selectedExId);
   const isBodyweight = selectedExercise?.last_weight_lbs === 0;
+  const isDurationEx = selectedExercise?.tracking_type === 'weight_duration';
   const filteredE1rm = selectedExId
     ? e1rmData.filter((d) => d.exercise_name === selectedExercise?.exercise_name)
     : e1rmData;
@@ -259,7 +260,7 @@ export default function MemberDetailPage() {
           <div className="card p-5">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-gray-800">
-                {isBodyweight ? 'Rep Growth' : 'Estimated 1RM'}
+                {isBodyweight ? (isDurationEx ? 'Duration Growth' : 'Rep Growth') : 'Estimated 1RM'}
                 {selectedExercise && (
                   <span className="text-gray-400 font-normal ml-1">— {selectedExercise.exercise_name}</span>
                 )}
@@ -270,10 +271,18 @@ export default function MemberDetailPage() {
                 </span>
               )}
               {isBodyweight ? (
-                selectedExercise?.last_reps != null && (
-                  <span className="text-sm text-gray-500">
-                    Last session: <strong className="text-gray-900">{selectedExercise.last_reps} reps</strong>
-                  </span>
+                isDurationEx ? (
+                  selectedExercise?.last_duration_seconds != null && (
+                    <span className="text-sm text-gray-500">
+                      Last session: <strong className="text-gray-900">{selectedExercise.last_duration_seconds}s</strong>
+                    </span>
+                  )
+                ) : (
+                  selectedExercise?.last_reps != null && (
+                    <span className="text-sm text-gray-500">
+                      Last session: <strong className="text-gray-900">{selectedExercise.last_reps} reps</strong>
+                    </span>
+                  )
                 )
               ) : (
                 selectedExercise?.last_e1rm && (
@@ -288,6 +297,7 @@ export default function MemberDetailPage() {
                 data={selectedRepsData}
                 projection={selectedRepsProjection}
                 exerciseName={selectedExercise?.exercise_name || ''}
+                isDuration={isDurationEx}
               />
             ) : (
               <E1RMChart
@@ -411,7 +421,9 @@ export default function MemberDetailPage() {
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-gray-900">
                         {bw
-                          ? (ex.last_reps != null ? `${ex.last_reps} reps` : '—')
+                          ? ex.tracking_type === 'weight_duration'
+                            ? (ex.last_duration_seconds != null ? `${ex.last_duration_seconds}s` : '—')
+                            : (ex.last_reps != null ? `${ex.last_reps} reps` : '—')
                           : (ex.last_e1rm ? `${ex.last_e1rm} lbs` : '—')}
                       </span>
                       <button

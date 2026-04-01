@@ -119,60 +119,43 @@ export function generatePalette(hex600: string): ColorPalette {
   };
 }
 
+function hexToRgbChannels(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `${r} ${g} ${b}`;
+}
+
 /** Apply a palette to the document's CSS variables immediately. */
 export function applyPalette(palette: ColorPalette) {
   const root = document.documentElement;
-  root.style.setProperty('--p-50',  palette[50]);
-  root.style.setProperty('--p-100', palette[100]);
-  root.style.setProperty('--p-200', palette[200]);
-  root.style.setProperty('--p-500', palette[500]);
-  root.style.setProperty('--p-600', palette[600]);
-  root.style.setProperty('--p-700', palette[700]);
-  root.style.setProperty('--p-800', palette[800]);
+  root.style.setProperty('--p-50',  hexToRgbChannels(palette[50]));
+  root.style.setProperty('--p-100', hexToRgbChannels(palette[100]));
+  root.style.setProperty('--p-200', hexToRgbChannels(palette[200]));
+  root.style.setProperty('--p-500', hexToRgbChannels(palette[500]));
+  root.style.setProperty('--p-600', hexToRgbChannels(palette[600]));
+  root.style.setProperty('--p-700', hexToRgbChannels(palette[700]));
+  root.style.setProperty('--p-800', hexToRgbChannels(palette[800]));
 }
 
 // --- Store ---
 
-const STORAGE_KEY = 'ylc_theme';
+const CACHE_KEY = 'ylc_theme_color';
 
 interface ThemeState {
-  activePresetId: string;
-  customColor: string;
-  palette: ColorPalette;
-  setPreset: (preset: ThemePreset) => void;
-  setCustomColor: (hex: string) => void;
+  activeColor: string;
+  applyColor: (hex: string) => void;
 }
 
-function loadSaved(): { presetId: string; customColor: string; palette: ColorPalette } | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-const defaultPalette = PRESETS[0].palette;
-const saved = loadSaved();
-const initialPalette = saved?.palette ?? defaultPalette;
-const initialPresetId = saved?.presetId ?? 'blue';
-const initialCustom = saved?.customColor ?? '#2563eb';
+const cachedColor = localStorage.getItem(CACHE_KEY) ?? '#2563eb';
 
 export const useThemeStore = create<ThemeState>((set) => ({
-  activePresetId: initialPresetId,
-  customColor: initialCustom,
-  palette: initialPalette,
+  activeColor: cachedColor,
 
-  setPreset: (preset) => {
-    applyPalette(preset.palette);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ presetId: preset.id, customColor: preset.palette[600], palette: preset.palette }));
-    set({ activePresetId: preset.id, customColor: preset.palette[600], palette: preset.palette });
-  },
-
-  setCustomColor: (hex) => {
+  applyColor: (hex: string) => {
     const palette = generatePalette(hex);
     applyPalette(palette);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ presetId: 'custom', customColor: hex, palette }));
-    set({ activePresetId: 'custom', customColor: hex, palette });
+    localStorage.setItem(CACHE_KEY, hex);
+    set({ activeColor: hex });
   },
 }));
